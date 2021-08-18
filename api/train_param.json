@@ -1,0 +1,7 @@
+{
+"target_col" : "Survived",
+"model_name" : "rf",
+"n_folds"  : 5,
+"iteration_num" : 5,
+"eval_metric" : "log_loss"
+}

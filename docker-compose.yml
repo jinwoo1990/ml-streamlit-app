@@ -1,0 +1,57 @@
+version: '3'
+
+services:
+  db:
+    container_name: db
+    restart: always
+    build: ./db
+    env_file:
+      - .env
+    volumes:
+      - ${DB_VOLUMES}:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - deploy_network
+
+  api:
+    container_name: api
+    restart: always
+    build: api/
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+    networks:
+      - deploy_network
+
+  dashboard:
+    container_name: dashboard
+    restart: always
+    build: dashboard/
+    env_file:
+      - .env
+    depends_on:
+      - api
+      - db
+    ports:
+      - "8501:8501"
+    networks:
+      - deploy_network
+
+  nginx:
+    container_name: nginx
+    restart: always
+    build: ./nginx
+    depends_on:
+      - dashboard
+    ports:
+      - "80:80"
+    networks:
+      - deploy_network
+
+networks:
+  deploy_network:
+    driver: bridge
