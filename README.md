@@ -20,6 +20,30 @@ AWS
 
 ## 사용 방법
 
+### 기본 설정
+
+1 .env 파일 만들기
+- 프로젝트 루트 디렉토리에 환경변수 설정을 위한 .env 파일 생성
+
+```shell
+# Sample .env file
+
+MONGO_INITDB_ROOT_USERNAME=root
+MONGO_INITDB_ROOT_PASSWORD=root
+MONGO_INITDB_DATABASE=ml
+# local pc 마운트 경로 + /data/db
+DB_VOLUMES=<local mount directory>/data/db
+MONGO_HOST=db
+MONGO_PORT=27017
+MONGO_USERNAME=test
+MONGO_PASSWORD=test
+MONGO_DATA_COLLECTION_NAME=data
+MONGO_MODEL_COLLECTION_NAME=model
+SAMPLE_FILE_PATH=/data/raw/train.csv
+```
+
+2. local pc 마운트 경로 디렉토리 생성
+
 ### 배포
 
 1. AWS Lightsail Instance 생성
@@ -53,7 +77,7 @@ AWS
 
 
 ### 사용
-어플리케이션 접속: https://<domain ip>:80/
+어플리케이션 접속: `https://<domain ip>:80/`
 
 어플리케이션 멈추기: `docker-compose stop`
 어플리케이션 다시 띄우기: `docker-compose start`
@@ -64,6 +88,6 @@ AWS
 
 ## Version
 
-### Version 1.0
+### v1.0.0
 
 Titanic 데이터 사용 샘플 어플리케이션 개발
