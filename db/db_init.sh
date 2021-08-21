@@ -28,6 +28,7 @@ EOF
 
 # csv import
 # container 생성 시 .env 에서 만들어진 변수 참조
+# mongoimport 로 csv import 시 null 값이 string ''로 입력됨 (처리 필요)
 mongoimport --host=127.0.0.1 -u "${MONGO_USERNAME}" -p "${MONGO_PASSWORD}" \
 --authenticationDatabase admin \
 --db "${MONGO_INITDB_DATABASE}" \

@@ -9,8 +9,7 @@ DB_USERNAME = os.environ.get('MONGO_USERNAME', 'root')
 DB_PASSWORD = os.environ.get('MONGO_PASSWORD', 'root')
 DB_HOST = os.environ.get('MONGO_HOST', '')
 DB_PORT = os.environ.get('MONGO_PORT', '')
-# CONN_STR = "mongodb://%s:%s@%s:%s" % (DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT)  # TODO:
-CONN_STR = "mongodb://%s:%s@%s:%s" % (DB_USERNAME, DB_PASSWORD, 'localhost', '27017')  # TODO:
+CONN_STR = "mongodb://%s:%s@%s:%s" % (DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT)
 
 
 def load_data_from_db(db_name, col_name):

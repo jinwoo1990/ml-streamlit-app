@@ -32,6 +32,7 @@ def load_data(input_path='', source_type='db'):
     print('\n', '## Load data', '\n')
     if source_type == 'db':
         raw_data = helper.load_data_from_db(DB_DATABASE_NAME, DB_DATA_COLLECTION_NAME)
+        raw_data = raw_data.replace('', np.nan, regex=True)
     elif source_type == 'csv':
         raw_data = pd.read_csv(input_path, sep=',')
     else:
@@ -449,7 +450,5 @@ def create_model_objects(source_type, target_col, model_name, n_folds, iteration
 
 
 if __name__ == '__main__':
-    # create_model_objects('csv', 'Survived', 'lgb', 5, 5, 'log_loss',
-    #                      input_path='./train.csv', output_path='./model_objects.pkl', file_flag=1)
-    create_model_objects('db', 'Survived', 'lgb', 5, 5, 'log_loss',
-                         input_path='', output_path='', file_flag=0)
+    create_model_objects('csv', 'Survived', 'lgb', 5, 5, 'log_loss',
+                         input_path='./train.csv', output_path='./model_objects.pkl', file_flag=1)

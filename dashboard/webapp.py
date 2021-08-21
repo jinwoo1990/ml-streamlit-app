@@ -186,9 +186,9 @@ def streamlit_main():
         # 예측 결과 표시
         st.header('Final Result')
         prediction = results["prediction"]
-        actual_prediction_value = [key for key in st.session_state.target_dict if st.session_state.target_dict[key] == 1][0]
+        prediction_name = [key for key in st.session_state.target_dict if st.session_state.target_dict[key] == prediction][0]
         probability = results["probability"]
-        st.write("Prediction: ", int(prediction), "(", actual_prediction_value, ")")
+        st.write("Prediction: ", int(prediction), "(", prediction_name, ")")
         st.write("Probability: ", round(float(probability), 3))
 
         # shap 값 계산
