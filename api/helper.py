@@ -4,6 +4,8 @@ import pickle
 import pymongo
 import numpy as np
 import pandas as pd
+from base_logger import logger
+
 
 DB_USERNAME = os.environ.get('MONGO_USERNAME', 'root')
 DB_PASSWORD = os.environ.get('MONGO_PASSWORD', 'root')
@@ -65,7 +67,7 @@ def load_and_save_base_model_from_pickle(db_name, col_name):
                                   'eval_results': model_objects['eval_results'],
                                   'explainer': model_objects['explainer']})
 
-    print('The base model %s saved successfully!' % info.inserted_id)
+    logger.info('The base model %s saved successfully!' % info.inserted_id)
 
 
 def save_model_to_db(db_name, col_name, model_objects):
@@ -97,7 +99,7 @@ def save_model_to_db(db_name, col_name, model_objects):
                                   'eval_results': model_objects['eval_results'],
                                   'explainer': model_objects['explainer']})
 
-    print('The model %s saved successfully!' % info.inserted_id)
+    logger.info('The model %s saved successfully!' % info.inserted_id)
 
 
 def load_model_from_db(db_name, col_name, model_name):

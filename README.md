@@ -91,3 +91,9 @@ SAMPLE_FILE_PATH=/data/raw/train.csv
 ### v1.0.0
 
 Titanic 데이터 사용 샘플 어플리케이션 개발
+
+
+## Memo
+
+log
+- https://hwangheek.github.io/2019/python-logging/

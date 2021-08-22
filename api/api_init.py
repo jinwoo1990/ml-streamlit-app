@@ -1,5 +1,7 @@
 import os
 import helper
+from base_logger import logger
+import traceback
 
 
 DB_DATABASE_NAME = os.environ.get('MONGO_INITDB_DATABASE', '')
@@ -16,4 +18,8 @@ def init():
 
 
 if __name__ == '__main__':
-    init()
+    try:
+        init()
+    except Exception:
+        logger.error(traceback.format_exc())
+        raise

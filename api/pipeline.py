@@ -14,6 +14,8 @@ import lightgbm as lgb
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, log_loss, confusion_matrix
 import shap
 import helper
+import traceback
+from base_logger import logger
 
 
 DB_DATABASE_NAME = os.environ.get('MONGO_INITDB_DATABASE', 'ml')
@@ -29,16 +31,17 @@ def load_data(input_path='', source_type='db'):
     :param source_type: source 데이터 유형
     :return: input 경로에서 읽어온 raw 데이터
     """
-    print('\n', '## Load data', '\n')
+    logger.info('## Load data')
     if source_type == 'db':
         raw_data = helper.load_data_from_db(DB_DATABASE_NAME, DB_DATA_COLLECTION_NAME)
         raw_data = raw_data.replace('', np.nan, regex=True)
     elif source_type == 'csv':
         raw_data = pd.read_csv(input_path, sep=',')
     else:
-        raise Exception("Enter the appropriate source type")
+        logger.error("source_type not recognized: should be 'db' or 'csv'")
+        raise ValueError
 
-    print(raw_data.head())
+    logger.info('raw_data: \n %s' % raw_data.head())
 
     return raw_data
 
@@ -52,7 +55,7 @@ def preprocess_data(raw_data, target_col, scaling_flag):
     :param scaling_flag: scaling 적용 여부 flag
     :return: 전처리가 된 train 데이터, null 값 처리를 위한 최빈값 dictionary, categorical labeling 을 위한 label dictionary
     """
-    print('\n', '## Preprocess data', '\n')
+    logger.info('## Preprocess data')
     # target 값 labeling
     target_label_encoder = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)
     target_label_encoder.fit(np.array(raw_data[target_col]).reshape(-1, 1))
@@ -65,13 +68,13 @@ def preprocess_data(raw_data, target_col, scaling_flag):
 
     # 필요없는 컬럼 제거
     labeled_data.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, errors='ignore', inplace=True)
-    print(labeled_data)
+    logger.info('labeled_data: \n %s' % labeled_data)
 
     # 결측값 제거
     # null 값 변환하기 위한 각 컬럼별 최빈값 산출
     null_counts = labeled_data.isnull().sum()
     null_cols = list(null_counts[null_counts > 0].index)
-    print(null_cols)
+    logger.info('null_cols: \n %s' % null_cols)
     null_converter = defaultdict(str)
     for col in null_cols:
         null_converter[col] = labeled_data[col].value_counts().index[0]
@@ -105,7 +108,8 @@ def preprocess_data(raw_data, target_col, scaling_flag):
         scaler = StandardScaler()
         preprocessed_data[preprocessed_data.columns.difference(['target'])] = scaler.fit_transform(X)
 
-    print(preprocessed_data)
+    logger.info('preprocessed_data: \n %s' % preprocessed_data)
+    # print(preprocessed_data)
 
     return preprocessed_data, target_dict, null_converter, label_encoder
 
@@ -118,30 +122,28 @@ def select_features(X, y):
     :param y: target 데이터
     :return: 중요 features list
     """
-    print('\n', '## Select features', '\n')
-    print('Original feature numbers: %s ' % len(X.columns))
+    logger.info('## Select features')
+    logger.info('Original feature numbers: %s' % len(X.columns))
 
     # 해석 용이성을 위한 multicollinearity 제거
     vif = pd.DataFrame()
     vif['VIF_Factor'] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
     vif['Feature'] = X.columns
-    print('VIF: ')
-    print(vif)
+    logger.info('VIF: \n %s' % vif)
     # VIF > 10 제거
     deleted_mask = [variance_inflation_factor(X.values, i) > 10 for i in range(X.shape[1])]
     features_with_multicollinearity = list(X.columns[deleted_mask])
     X = X.drop(features_with_multicollinearity, axis=1)
-    print(X)
+    logger.info('X: \n %s' % X)
 
     estimator = RandomForestClassifier(random_state=20, n_estimators=100, n_jobs=-1)
     selector = RFECV(estimator, step=1, cv=5, min_features_to_select=5, n_jobs=-1)
     selector = selector.fit(X, y)
 
-    print('%s features selected' % selector.n_features_)
+    logger.info('%s features selected' % selector.n_features_)
     selected_mask = selector.support_
     features_selected = list(X.columns[selected_mask])
-    print('Selected features:')
-    print(features_selected)
+    logger.info('Selected features: \n %s' % features_selected)
 
     return features_selected
 
@@ -161,14 +163,14 @@ def optimize_hyperparameters_with_random_search(X, y, model_name, n_folds, itera
     :param random_state: random state
     :return: 최적화된 parameters
     """
-    print('\n', '## Optimize hyperparameters', '\n')
+    logger.info('## Optimize hyperparameters')
     lowest_cv = 9999999
     optimized_params = {}
 
     start = time.time()
 
     for i in range(iteration_num):
-        print('For {} of {} iterations'.format(i + 1, iteration_num))
+        logger.info('For {} of {} iterations'.format(i + 1, iteration_num))
 
         if model_name == 'rf':
             # mongoDB 사용 시 16 mb 용량 한계로 parameter 범위 작게 잡음
@@ -199,7 +201,7 @@ def optimize_hyperparameters_with_random_search(X, y, model_name, n_folds, itera
             min_cv_results = np.mean(eval_results[eval_metric])
 
             if min_cv_results < lowest_cv:
-                print('-- params changed')
+                logger.info('Params changed')
                 lowest_cv = min_cv_results
                 optimized_params = params
 
@@ -207,7 +209,8 @@ def optimize_hyperparameters_with_random_search(X, y, model_name, n_folds, itera
             if eval_metric == 'log_loss':
                 eval_metric_str = 'binary_logloss'
             else:
-                raise Exception("Enter the appropriate eval metric")
+                logger.error("eval_metric not recognized: should be 'log_loss' or ...")
+                raise ValueError
 
             params = {'objective': 'binary',
                       'metric': eval_metric_str,
@@ -236,16 +239,16 @@ def optimize_hyperparameters_with_random_search(X, y, model_name, n_folds, itera
             min_cv_results = min(cv_results['binary_logloss-mean'])
 
             if min_cv_results < lowest_cv:
-                print('-- params changed')
+                logger.info('Params changed')
                 lowest_cv = min_cv_results
                 optimized_params = params
         else:
-            raise Exception("Enter the appropriate model type")
+            logger.error("model_type not recognized: should be 'rf' or 'lgb'")
+            raise ValueError
 
     end = time.time()
 
-    print('')
-    print('Elapsed time for optimization: ', end - start)
+    logger.info('Elapsed time for optimization: %s' % (end - start))
 
     return optimized_params
 
@@ -264,7 +267,7 @@ def evaluate_model(X, y, model_name, optimized_params, n_folds, eval_metric='log
     :param random_state: random state
     :return: 모델 평가 결과
     """
-    print('\n', '## Evaluate model', '\n')
+    logger.info('## Evaluate model')
     # StratifiedKFold 로 안 하면 class 가 imbalanced 된 데이터의 경우 metric 측정이 제대로 안될 수 있음
     kf = StratifiedKFold(n_splits=n_folds, random_state=random_state, shuffle=True)
 
@@ -291,7 +294,8 @@ def evaluate_model(X, y, model_name, optimized_params, n_folds, eval_metric='log
             if eval_metric == 'log_loss':
                 eval_metric_str = 'logloss'
             else:
-                raise Exception("Enter the appropriate eval metric")
+                logger.error("eval_metric not recognized: should be 'log_loss' or ...")
+                raise ValueError
 
             X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, stratify=y)
             fitted_model = lgb.LGBMClassifier(**optimized_params)
@@ -299,7 +303,8 @@ def evaluate_model(X, y, model_name, optimized_params, n_folds, eval_metric='log
                              categorical_feature=categorical_feats,
                              early_stopping_rounds=50, verbose=500)
         else:
-            raise Exception("Enter the appropriate model type")
+            logger.error("model_type not recognized: should be 'rf' or 'lgb'")
+            raise ValueError
         end = time.time()
 
         y_true = y_test
@@ -323,7 +328,7 @@ def evaluate_model(X, y, model_name, optimized_params, n_folds, eval_metric='log
         eval_results['roc_auc_score'].append(fold_roc_auc_score)
         eval_results['log_loss'].append(fold_log_loss)
 
-    print(eval_results)
+    logger.info('eval_results: \n %s' % eval_results)
 
     return eval_results
 
@@ -340,7 +345,7 @@ def train_model(X, y, model_name, optimized_params, eval_metric='log_loss', cate
     :param categorical_feats: 자동 encoding 할 categorical featatures (lgbm 등에서 사용)
     :return: 학습된 모델 객체
     """
-    print('\n', '## Train model', '\n')
+    logger.info('## Train model')
     if model_name == 'rf':
         fitted_model = RandomForestClassifier(**optimized_params)
         fitted_model.fit(X, y)
@@ -348,7 +353,8 @@ def train_model(X, y, model_name, optimized_params, eval_metric='log_loss', cate
         if eval_metric == 'log_loss':
             eval_metric_str = 'logloss'
         else:
-            raise Exception("Enter the appropriate eval metric")
+            logger.error("eval_metric not recognized: should be 'log_loss' or ...")
+            raise ValueError
 
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, stratify=y)
         fitted_model = lgb.LGBMClassifier(**optimized_params)
@@ -356,7 +362,8 @@ def train_model(X, y, model_name, optimized_params, eval_metric='log_loss', cate
                          categorical_feature=categorical_feats,
                          early_stopping_rounds=50, verbose=500)
     else:
-        raise Exception("Enter the appropriate model type")
+        logger.error("model_type not recognized: should be 'rf' or 'lgb'")
+        raise ValueError
 
     return fitted_model
 
@@ -368,7 +375,7 @@ def generate_shap_explainer(fitted_model):
     :param fitted_model: 학습된 모델 객체
     :return: shap explainer, train 데이터 shap values
     """
-    print('\n', '## Generate shap explainer', '\n')
+    logger.info('## Generate shap explainer')
     explainer = shap.TreeExplainer(fitted_model)
 
     return explainer
@@ -450,5 +457,9 @@ def create_model_objects(source_type, target_col, model_name, n_folds, iteration
 
 
 if __name__ == '__main__':
-    create_model_objects('csv', 'Survived', 'lgb', 5, 5, 'log_loss',
-                         input_path='./train.csv', output_path='./model_objects.pkl', file_flag=1)
+    try:
+        create_model_objects('cv', 'Survived', 'rf', 5, 5, 'log_loss',
+                             input_path='./train.csv', output_path='./model_objects.pkl', file_flag=1)
+    except Exception:
+        logger.error(traceback.format_exc())
+        raise
