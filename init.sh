@@ -6,11 +6,12 @@ if [ -f .env ]; then
 fi
 
 # db 초기화
-#rm -rf ${DB_VOLUMES}/{*,.*}
-rm -rf ${DB_VOLUMES} && mkdir ${DB_VOLUMES}
+#rm -rf ${DB_VOLUMES} && mkdir ${DB_VOLUMES}
 
-## docker-compose up 실행
+# docker-compose up 실행
 docker-compose up --build -d
 
-## 기본 모델 db 저장
-docker exec api sh -c "python api_init.py"
+# unittest
+docker exec api sh -c "python -m unittest discover -v tests"
+docker exec dashboard sh -c "python -m unittest discover -v tests"
+

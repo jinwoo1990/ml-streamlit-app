@@ -4,7 +4,7 @@ import pickle
 import pandas as pd
 import helper
 import pipeline
-from base_logger import logger
+from loggers import logger
 import traceback
 
 
@@ -12,6 +12,8 @@ app = Flask(__name__)
 
 DB_DATABASE_NAME = os.environ.get('MONGO_INITDB_DATABASE', '')
 DB_MODEL_COLLECTION_NAME = os.environ.get('MONGO_MODEL_COLLECTION_NAME', '')
+
+helper.load_and_save_base_model_from_pickle(DB_DATABASE_NAME, DB_MODEL_COLLECTION_NAME)
 
 
 @app.route('/model/predict/', methods=['POST'])

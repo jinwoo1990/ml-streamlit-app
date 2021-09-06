@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import shap
 import helper
 import traceback
-from base_logger import logger
+from loggers import logger
 
 
 DB_DATABASE_NAME = os.environ.get('MONGO_INITDB_DATABASE', 'ml')
@@ -109,7 +109,6 @@ def preprocess_data(raw_data, target_col, scaling_flag):
         preprocessed_data[preprocessed_data.columns.difference(['target'])] = scaler.fit_transform(X)
 
     logger.info('preprocessed_data: \n %s' % preprocessed_data)
-    # print(preprocessed_data)
 
     return preprocessed_data, target_dict, null_converter, label_encoder
 

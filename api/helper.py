@@ -4,13 +4,13 @@ import pickle
 import pymongo
 import numpy as np
 import pandas as pd
-from base_logger import logger
+from loggers import logger
 
 
 DB_USERNAME = os.environ.get('MONGO_USERNAME', 'root')
 DB_PASSWORD = os.environ.get('MONGO_PASSWORD', 'root')
-DB_HOST = os.environ.get('MONGO_HOST', '')
-DB_PORT = os.environ.get('MONGO_PORT', '')
+DB_HOST = os.environ.get('MONGO_HOST', 'localhost')
+DB_PORT = os.environ.get('MONGO_PORT', '27017')
 CONN_STR = "mongodb://%s:%s@%s:%s" % (DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT)
 
 
@@ -44,30 +44,34 @@ def load_and_save_base_model_from_pickle(db_name, col_name):
     :param col_name: 연결할 mongoDB collection 이름
     :return: None
     """
-    with open('model_objects.pkl', 'rb') as handle:
-        model_objects = pickle.load(handle)
-
     client = pymongo.MongoClient(CONN_STR)
     database = client[db_name]
     collection = database[col_name]
 
-    now = datetime.datetime.now()
-    created_time = now.strftime('%Y-%m-%d %H:%M:%S')
-    created_timestamp = now.timestamp()
+    cursor = collection.find()
+    result = list(cursor)
 
-    info = collection.insert_one({'model_name': model_objects['model_name'],
-                                  'created_time': created_time,
-                                  'created_timestamp': created_timestamp,
-                                  'target_dict': model_objects['target_dict'],
-                                  'null_converter': model_objects['null_converter'],
-                                  'label_encoder': model_objects['label_encoder'],
-                                  'features_selected': model_objects['features_selected'],
-                                  'optimized_params': model_objects['optimized_params'],
-                                  'fitted_model': model_objects['fitted_model'],
-                                  'eval_results': model_objects['eval_results'],
-                                  'explainer': model_objects['explainer']})
+    if len(result) == 0:
+        with open('model_objects.pkl', 'rb') as handle:
+            model_objects = pickle.load(handle)
 
-    logger.info('The base model %s saved successfully!' % info.inserted_id)
+        now = datetime.datetime.now()
+        created_time = now.strftime('%Y-%m-%d %H:%M:%S')
+        created_timestamp = now.timestamp()
+
+        info = collection.insert_one({'model_name': model_objects['model_name'],
+                                      'created_time': created_time,
+                                      'created_timestamp': created_timestamp,
+                                      'target_dict': model_objects['target_dict'],
+                                      'null_converter': model_objects['null_converter'],
+                                      'label_encoder': model_objects['label_encoder'],
+                                      'features_selected': model_objects['features_selected'],
+                                      'optimized_params': model_objects['optimized_params'],
+                                      'fitted_model': model_objects['fitted_model'],
+                                      'eval_results': model_objects['eval_results'],
+                                      'explainer': model_objects['explainer']})
+
+        logger.info('The classification model %s saved successfully!' % info.inserted_id)
 
 
 def save_model_to_db(db_name, col_name, model_objects):

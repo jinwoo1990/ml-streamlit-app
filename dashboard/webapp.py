@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import shap
 import matplotlib.pyplot as plt
-from base_logger import logger
+from loggers import logger
 
 
 # 모델 API endpoint

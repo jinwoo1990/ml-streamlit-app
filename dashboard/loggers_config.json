@@ -32,7 +32,7 @@
     }
   },
   "loggers": {
-    "base": {
+    "base_logger": {
       "level": "DEBUG",
       "handlers": ["console", "file_debug", "file_error"],
       "propagate": true
