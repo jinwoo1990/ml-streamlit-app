@@ -1,19 +1,14 @@
-import os
 from flask import Flask, request, jsonify
 import pickle
 import pandas as pd
-import helper
-import pipeline
+from utils.data_handling import load_and_save_base_model_from_pickle, load_model_from_db
+from pipeline_titanic import train_new_model, transform_record, predict_record
 from loggers import logger
 import traceback
 
 
 app = Flask(__name__)
-
-DB_DATABASE_NAME = os.environ.get('MONGO_INITDB_DATABASE', '')
-DB_MODEL_COLLECTION_NAME = os.environ.get('MONGO_MODEL_COLLECTION_NAME', '')
-
-helper.load_and_save_base_model_from_pickle(DB_DATABASE_NAME, DB_MODEL_COLLECTION_NAME)
+load_and_save_base_model_from_pickle()
 
 
 @app.route('/model/predict/', methods=['POST'])
@@ -27,7 +22,7 @@ def predict():
         json_data = request.get_json()
         model_name = json_data[0]['model_name']
 
-        model_objects = helper.load_model_from_db(DB_DATABASE_NAME, DB_MODEL_COLLECTION_NAME, model_name)
+        model_objects = load_model_from_db(model_name)
 
         null_converter = pickle.loads(model_objects['null_converter'])
         label_encoder = pickle.loads(model_objects['label_encoder'])
@@ -36,9 +31,9 @@ def predict():
 
         data = pd.DataFrame(json_data)
         del data['model_name']
-        data = helper.preprocess_record(data, null_converter, label_encoder, features_selected)
+        data = transform_record(data, model_name, null_converter, label_encoder, features_selected)
 
-        prediction, probability = helper.predict_record(data, fitted_model)
+        prediction, probability = predict_record(data, fitted_model)
 
         data['prediction'] = prediction
         data['probability'] = probability
@@ -67,7 +62,8 @@ def train():
         n_folds = json_data['n_folds']
         iteration_num = json_data['iteration_num']
         eval_metric = json_data['eval_metric']
-        pipeline.create_model_objects('db', target_col, model_name, n_folds, iteration_num, eval_metric)
+        train_new_model(source_type='db', target_col=target_col, model_name=model_name,
+                        n_folds=n_folds, iteration_num=iteration_num, eval_metric=eval_metric)
 
     except Exception:
         logger.error(traceback.format_exc())

@@ -1,7 +1,7 @@
 import unittest
 
 
-# python -m unittest -v test_pipeline.py
+# python -m unittest -v aaaaa.py
 
 # test_sample.py 내용들 옮겨보자
 
