@@ -8,5 +8,6 @@ COPY requirements.txt /dashboard/requirements.txt
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p /dashboard/logs
 COPY . .
+COPY credentials /root/.aws/credentials
 ENTRYPOINT ["streamlit", "run"]
 CMD ["webapp.py"]

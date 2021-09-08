@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import shap
 import matplotlib.pyplot as plt
+from utils.data_handling import read_from_s3
 from loggers import logger
 
 
@@ -89,8 +90,12 @@ def load_session_variable_from_model():
     st.session_state.created_timestamp = model_objects['created_timestamp']
     st.session_state.target_dict = pickle.loads(model_objects['target_dict'])
     st.session_state.features_selected = pickle.loads(model_objects['features_selected'])
-    st.session_state.explainer = pickle.loads(model_objects['explainer'])
     st.session_state.eval_results = pickle.loads(model_objects['eval_results'])
+
+    # st.session_state.explainer = pickle.loads(model_objects['explainer'])
+    # TODO: api 폴더에 접근이 안되니 문제가 됨. s3 사용
+    print(model_objects['explainer'])
+    st.session_state.explainer = read_from_s3(model_objects['explainer'])
 
 
 def explain_model_prediction(data, shap_explainer, index):

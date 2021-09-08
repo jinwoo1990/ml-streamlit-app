@@ -8,5 +8,6 @@ COPY requirements.txt /api/requirements.txt
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p /api/logs
 COPY . .
+COPY credentials /root/.aws/credentials
 ENTRYPOINT ["python"]
 CMD ["app.py"]

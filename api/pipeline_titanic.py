@@ -1,6 +1,8 @@
+import os
+import datetime
 import pickle
 import numpy as np
-from utils.data_handling import load_data, save_model_to_db
+from utils.data_handling import load_data, save_model_to_db, write_to_s3, read_from_s3
 from utils.explainer import generate_shap_explainer
 from preprocessing.preprocessing import label_target, impute_null_features, label_features, scale_features, select_features
 from classification.param_search import optimize_hyperparameters_with_random_search
@@ -91,9 +93,27 @@ def train_new_model(source_type, target_col, model_name, n_folds, iteration_num,
     label_encoder_pkl = pickle.dumps(label_encoder)
     features_selected_pkl = pickle.dumps(features_selected)
     optimized_params_pkl = pickle.dumps(optimized_params)
-    fitted_model_pkl = pickle.dumps(fitted_model)
     eval_results_pkl = pickle.dumps(eval_results)
-    explainer_pkl = pickle.dumps(explainer)
+
+    # TODO: 일단 파일 기반
+    created_time = datetime.datetime.now().strftime('%Y%m%d%H%M')
+
+    # 's3://ml-streamlit/model_objects.pkl'
+    # storage_path = os.getcwd() + '/storage/'
+    storage_path = 's3://ml-streamlit/'
+    model_uri = storage_path + model_name + '_' + str(created_time) + '_model'
+    explainer_uri = storage_path + model_name + '_' + str(created_time) + '_explainer'
+
+    logger.info(model_uri)
+    logger.info(explainer_uri)
+
+    write_to_s3(fitted_model, model_uri)
+    write_to_s3(explainer, explainer_uri)
+
+    # with open(model_uri, 'wb') as handle:
+    #     pickle.dump(fitted_model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # with open(explainer_uri, 'wb') as handle:
+    #     pickle.dump(explainer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     model_objects = {
         'model_name': model_name,
@@ -102,9 +122,9 @@ def train_new_model(source_type, target_col, model_name, n_folds, iteration_num,
         'label_encoder': label_encoder_pkl,
         'features_selected': features_selected_pkl,
         'optimized_params': optimized_params_pkl,
-        'fitted_model': fitted_model_pkl,
         'eval_results': eval_results_pkl,
-        'explainer': explainer_pkl
+        'fitted_model': model_uri,
+        'explainer': explainer_uri
     }
 
     if file_flag == 1:
@@ -162,13 +182,13 @@ def predict_record(data, model):
 if __name__ == '__main__':
     try:
         # db
-        train_new_model(source_type='db', target_col='Survived', model_name='rf',
-                        n_folds=5, iteration_num=5, eval_metric='log_loss')
+        # train_new_model(source_type='db', target_col='Survived', model_name='rf',
+        #                 n_folds=5, iteration_num=5, eval_metric='log_loss')
 
         # csv
-        # train_new_model(source_type='csv', target_col='Survived', model_name='rf',
-        #                 n_folds=5, iteration_num=5, eval_metric='log_loss',
-        #                 file_flag=1, input_path='./train.csv', output_path='./model_objects.pkl')
+        train_new_model(source_type='csv', target_col='Survived', model_name='rf',
+                        n_folds=5, iteration_num=5, eval_metric='log_loss',
+                        file_flag=1, input_path='./train.csv', output_path='./model_objects.pkl')
 
     except Exception:
         logger.error(traceback.format_exc())

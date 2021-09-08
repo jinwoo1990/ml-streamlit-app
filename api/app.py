@@ -1,14 +1,13 @@
 from flask import Flask, request, jsonify
 import pickle
 import pandas as pd
-from utils.data_handling import load_and_save_base_model_from_pickle, load_model_from_db
+from utils.data_handling import load_model_from_db, read_from_s3
 from pipeline_titanic import train_new_model, transform_record, predict_record
 from loggers import logger
 import traceback
 
 
 app = Flask(__name__)
-load_and_save_base_model_from_pickle()
 
 
 @app.route('/model/predict/', methods=['POST'])
@@ -27,7 +26,11 @@ def predict():
         null_converter = pickle.loads(model_objects['null_converter'])
         label_encoder = pickle.loads(model_objects['label_encoder'])
         features_selected = pickle.loads(model_objects['features_selected'])
-        fitted_model = pickle.loads(model_objects['fitted_model'])
+
+        # fitted_model = pickle.loads(model_objects['fitted_model'])
+        # with open(model_objects['fitted_model'], 'rb') as f:
+        #     fitted_model = pickle.load(f)
+        fitted_model = read_from_s3(model_objects['fitted_model'])
 
         data = pd.DataFrame(json_data)
         del data['model_name']

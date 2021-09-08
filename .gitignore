@@ -127,5 +127,7 @@ dmypy.json
 # custom
 /data
 /backup
-api/test.ipynb
 memo.txt
+api/test.ipynb
+api/credentials
+dashboard/credentials

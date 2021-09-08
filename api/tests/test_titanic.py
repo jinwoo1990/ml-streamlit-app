@@ -39,14 +39,6 @@ class MyTests(unittest.TestCase):
         self.assertEqual(df.shape, df_test.shape)
         self.assertEqual(list(df.columns), list(df_test.columns))
 
-    def test_load_and_save_model_from_pickle(self):
-        print('')
-        collection = self.database[DB_MODEL_COLLECTION_NAME]
-        item = collection.find({}, {'model_name': 1, 'created_time': 1}).next()
-        logger.info('loaded_model: \n %s' % item)
-
-        self.assertTrue(item)
-
     def test_create_model_objects(self):
         print('')
         collection = self.database[DB_MODEL_COLLECTION_NAME]
